@@ -219,13 +219,12 @@ if [ ! -f "$WRAPPER_JAR" ] || ! "$JAVACMD" -jar "$WRAPPER_JAR" --version >/dev/n
             GRADLE_VERSION="$PROP_VAL"
         fi
     fi
-    # Use curl or wget to download the clean wrapper jar
+    # Use curl or wget to download the clean wrapper jar from raw.githubusercontent.com
+    URL="https://raw.githubusercontent.com/gradle/gradle/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar"
     if command -v curl >/dev/null 2>&1; then
-        curl -s -L -o "$WRAPPER_JAR" "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-wrapper.jar" || \
-        curl -s -L -o "$WRAPPER_JAR" "https://raw.githubusercontent.com/gradle/gradle/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar"
+        curl -f -s -L -o "$WRAPPER_JAR" "$URL"
     elif command -v wget >/dev/null 2>&1; then
-        wget -q -O "$WRAPPER_JAR" "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-wrapper.jar" || \
-        wget -q -O "$WRAPPER_JAR" "https://raw.githubusercontent.com/gradle/gradle/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar"
+        wget -q -O "$WRAPPER_JAR" "$URL"
     fi
 fi
 
