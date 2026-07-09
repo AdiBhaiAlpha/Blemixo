@@ -208,6 +208,27 @@ DEFAULT_JVM_OPTS='"-Xmx64m" "-Xms64m"'
 #   * For example: A user cannot expect ${Hostname} to be expanded, as it is an environment variable and will be
 #     treated as '${Hostname}' itself on the command line.
 
+# Ensure gradle-wrapper.jar is valid, otherwise download a clean copy
+WRAPPER_JAR="$APP_HOME/gradle/wrapper/gradle-wrapper.jar"
+if [ ! -f "$WRAPPER_JAR" ] || ! "$JAVACMD" -jar "$WRAPPER_JAR" --version >/dev/null 2>&1; then
+    warn "gradle-wrapper.jar is missing or corrupt. Downloading a clean copy..."
+    GRADLE_VERSION="9.3.1"
+    if [ -f "$APP_HOME/gradle/wrapper/gradle-wrapper.properties" ]; then
+        PROP_VAL=$(grep 'distributionUrl' "$APP_HOME/gradle/wrapper/gradle-wrapper.properties" | sed -n 's/.*gradle-\(.*\)-bin.zip.*/\1/p')
+        if [ -n "$PROP_VAL" ]; then
+            GRADLE_VERSION="$PROP_VAL"
+        fi
+    fi
+    # Use curl or wget to download the clean wrapper jar
+    if command -v curl >/dev/null 2>&1; then
+        curl -s -L -o "$WRAPPER_JAR" "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-wrapper.jar" || \
+        curl -s -L -o "$WRAPPER_JAR" "https://raw.githubusercontent.com/gradle/gradle/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar"
+    elif command -v wget >/dev/null 2>&1; then
+        wget -q -O "$WRAPPER_JAR" "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-wrapper.jar" || \
+        wget -q -O "$WRAPPER_JAR" "https://raw.githubusercontent.com/gradle/gradle/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar"
+    fi
+fi
+
 set -- \
         "-Dorg.gradle.appname=$APP_BASE_NAME" \
         -jar "$APP_HOME/gradle/wrapper/gradle-wrapper.jar" \
