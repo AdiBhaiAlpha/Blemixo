@@ -1,0 +1,6 @@
+{
+  "name": "Blemixo",
+  "description": "A modern, premium messaging application styled with glassmorphism and WhatsApp-inspired details.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

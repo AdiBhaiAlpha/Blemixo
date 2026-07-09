@@ -1,0 +1,14 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Chat bubble outline and fill with glowing brand color #25D366 -->
+    <path
+        android:fillColor="#25D366"
+        android:pathData="M 32,28 h 44 c 5.5,0 10,4.5 10,10 v 26 c 0,5.5 -4.5,10 -10,10 H 46 L 30,82 V 68 c -5.5,0 -10,-4.5 -10,-10 V 38 c 0,-5.5 4.5,-10 10,-10 Z" />
+    <!-- Sleek inner letter B with premium styling in white -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 40,40 h 12 c 3.3,0 6,2.7 6,6 0,2.5 -1.5,4.5 -3.8,5.5 C 57.5,52.5 59,55 59,58 c 0,3.3 -2.7,6 -6,6 H 40 Z M 45,45 v 5 h 7 c 1.1,0 2,-0.9 2,-2 0,-1.1 -0.9,-2 -2,-2 Z M 45,54 v 5 h 8 c 1.1,0 2,-0.9 2,-2 0,-1.1 -0.9,-2 -2,-2 Z" />
+</vector>
