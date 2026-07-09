@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.BlemixoViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,6 +28,8 @@ fun SettingsScreen(viewModel: BlemixoViewModel) {
 
     var isNotificationsEnabled by remember { mutableStateOf(true) }
     var isBackupInProgess by remember { mutableStateOf(false) }
+    var backupProgress by remember { mutableStateOf(0) }
+    val scope = rememberCoroutineScope()
 
     Box(
         modifier = Modifier
@@ -152,9 +155,18 @@ fun SettingsScreen(viewModel: BlemixoViewModel) {
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
                             .clickable {
-                                isBackupInProgess = true
-                                viewModel.showNotification("Backup successfully completed!")
-                                isBackupInProgess = false
+                                if (!isBackupInProgess) {
+                                    scope.launch {
+                                        isBackupInProgess = true
+                                        for (i in 1..10) {
+                                            kotlinx.coroutines.delay(180)
+                                            backupProgress = i * 10
+                                        }
+                                        viewModel.showNotification("Chat Backup completed successfully!")
+                                        isBackupInProgess = false
+                                        backupProgress = 0
+                                    }
+                                }
                             }
                             .padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -176,18 +188,28 @@ fun SettingsScreen(viewModel: BlemixoViewModel) {
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = if (isBackupInProgess) "Backing up Blemixo..." else "Last backup: Today, 10:15 PM (2.4 MB)",
+                                    text = if (isBackupInProgess) "Encrypting and uploading: $backupProgress%" else "Last backup: Today, 10:15 PM (2.4 MB)",
                                     fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                    color = if (isBackupInProgess) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                    fontWeight = if (isBackupInProgess) FontWeight.Bold else FontWeight.Normal
                                 )
                             }
                         }
-                        Icon(
-                            Icons.Default.ChevronRight,
-                            contentDescription = "Arrow right",
-                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                            modifier = Modifier.size(20.dp)
-                        )
+                        if (isBackupInProgess) {
+                            CircularProgressIndicator(
+                                progress = { backupProgress / 100f },
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.5.dp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        } else {
+                            Icon(
+                                Icons.Default.ChevronRight,
+                                contentDescription = "Arrow right",
+                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
 
                     Divider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))

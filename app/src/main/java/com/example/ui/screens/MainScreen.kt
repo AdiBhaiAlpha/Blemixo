@@ -45,6 +45,7 @@ fun MainScreen(viewModel: BlemixoViewModel) {
     // Interactive bottom sheet for chat long presses
     var selectedSheetChat by remember { mutableStateOf<ChatEntity?>(null) }
     var showChatOptionsSheet by remember { mutableStateOf(false) }
+    var showAddChatDialog by remember { mutableStateOf(false) }
 
     Row(modifier = Modifier.fillMaxSize()) {
         // Sidebar Navigation Rail (Only for tablets / wide screens)
@@ -149,58 +150,157 @@ fun MainScreen(viewModel: BlemixoViewModel) {
                 Box(modifier = Modifier.weight(1f)) {
                     when (currentTab) {
                         "chats" -> {
-                            Column(modifier = Modifier.fillMaxSize()) {
-                                // Real-time Search input styled with 14px rounded corners
-                                OutlinedTextField(
-                                    value = searchQuery,
-                                    onValueChange = { viewModel.updateSearchQuery(it) },
-                                    placeholder = { Text("Search chats or messages...") },
-                                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
-                                    shape = RoundedCornerShape(14.dp),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp)
-                                        .testTag("chat_search_input"),
-                                    singleLine = true
-                                )
+                            Box(modifier = Modifier.fillMaxSize()) {
+                                Column(modifier = Modifier.fillMaxSize()) {
+                                    // Real-time Search input styled with 14px rounded corners
+                                    OutlinedTextField(
+                                        value = searchQuery,
+                                        onValueChange = { viewModel.updateSearchQuery(it) },
+                                        placeholder = { Text("Search chats or messages...") },
+                                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+                                        shape = RoundedCornerShape(14.dp),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp)
+                                            .testTag("chat_search_input"),
+                                        singleLine = true
+                                    )
 
-                                if (chats.isEmpty()) {
-                                    Box(
-                                        modifier = Modifier.weight(1f).fillMaxWidth(),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            Icon(
-                                                Icons.Default.ChatBubbleOutline,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f),
-                                                modifier = Modifier.size(56.dp)
-                                            )
-                                            Spacer(modifier = Modifier.height(12.dp))
+                                    if (chats.isEmpty()) {
+                                        Box(
+                                            modifier = Modifier.weight(1f).fillMaxWidth(),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                Icon(
+                                                    Icons.Default.ChatBubbleOutline,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f),
+                                                    modifier = Modifier.size(56.dp)
+                                                )
+                                                Spacer(modifier = Modifier.height(12.dp))
+                                                Text(
+                                                    "No active chats found",
+                                                    fontSize = 15.sp,
+                                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+                                                )
+                                            }
+                                        }
+                                    } else {
+                                        LazyColumn(
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentPadding = PaddingValues(bottom = 80.dp) // extra padding to avoid overlapping the FAB
+                                        ) {
+                                            items(chats) { chat ->
+                                                ChatItemRow(
+                                                    chat = chat,
+                                                    isSelected = chat.id == activeChatId,
+                                                    onClick = { viewModel.openChat(chat.id) },
+                                                    onLongClick = {
+                                                        selectedSheetChat = chat
+                                                        showChatOptionsSheet = true
+                                                    }
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Green WhatsApp-style FAB to start a secure session
+                                FloatingActionButton(
+                                    onClick = { showAddChatDialog = true },
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    shape = RoundedCornerShape(16.dp),
+                                    modifier = Modifier
+                                        .align(Alignment.BottomEnd)
+                                        .padding(20.dp)
+                                        .testTag("add_chat_fab")
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.AddComment,
+                                        contentDescription = "Start Secure Session",
+                                        tint = Color.White
+                                    )
+                                }
+
+                                // Start Secure Chat Alert Dialog
+                                if (showAddChatDialog) {
+                                    var newContactName by remember { mutableStateOf("") }
+                                    var newContactPhone by remember { mutableStateOf("") }
+                                    var inputError by remember { mutableStateOf<String?>(null) }
+
+                                    AlertDialog(
+                                        onDismissRequest = { showAddChatDialog = false },
+                                        title = {
                                             Text(
-                                                "No active chats found",
-                                                fontSize = 15.sp,
-                                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+                                                text = "Start Secure Chat",
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 20.sp
                                             )
-                                        }
-                                    }
-                                } else {
-                                    LazyColumn(
-                                        modifier = Modifier.fillMaxSize(),
-                                        contentPadding = PaddingValues(bottom = 16.dp)
-                                    ) {
-                                        items(chats) { chat ->
-                                            ChatItemRow(
-                                                chat = chat,
-                                                isSelected = chat.id == activeChatId,
-                                                onClick = { viewModel.openChat(chat.id) },
-                                                onLongClick = {
-                                                    selectedSheetChat = chat
-                                                    showChatOptionsSheet = true
+                                        },
+                                        text = {
+                                            Column(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                                            ) {
+                                                Text(
+                                                    text = "Enter a contact's name and mobile number to begin a secure encrypted Blemixo session.",
+                                                    fontSize = 14.sp,
+                                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                                )
+
+                                                OutlinedTextField(
+                                                    value = newContactName,
+                                                    onValueChange = { newContactName = it },
+                                                    label = { Text("Contact Name") },
+                                                    leadingIcon = { Icon(Icons.Default.Person, null) },
+                                                    shape = RoundedCornerShape(14.dp),
+                                                    singleLine = true,
+                                                    modifier = Modifier.fillMaxWidth().testTag("new_contact_name")
+                                                )
+
+                                                OutlinedTextField(
+                                                    value = newContactPhone,
+                                                    onValueChange = { newContactPhone = it },
+                                                    label = { Text("Phone Number") },
+                                                    leadingIcon = { Icon(Icons.Default.Phone, null) },
+                                                    shape = RoundedCornerShape(14.dp),
+                                                    singleLine = true,
+                                                    modifier = Modifier.fillMaxWidth().testTag("new_contact_phone")
+                                                )
+
+                                                if (inputError != null) {
+                                                    Text(
+                                                        text = inputError!!,
+                                                        color = MaterialTheme.colorScheme.error,
+                                                        fontSize = 12.sp,
+                                                        fontWeight = FontWeight.Medium
+                                                    )
                                                 }
-                                            )
+                                            }
+                                        },
+                                        confirmButton = {
+                                            Button(
+                                                onClick = {
+                                                    if (newContactName.trim().isEmpty() || newContactPhone.trim().isEmpty()) {
+                                                        inputError = "Please fill in all fields."
+                                                    } else {
+                                                        viewModel.createNewChat(newContactName.trim(), newContactPhone.trim())
+                                                        showAddChatDialog = false
+                                                    }
+                                                },
+                                                shape = RoundedCornerShape(12.dp),
+                                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                                            ) {
+                                                Text("Start Chat", color = Color.White)
+                                            }
+                                        },
+                                        dismissButton = {
+                                            TextButton(onClick = { showAddChatDialog = false }) {
+                                                Text("Cancel")
+                                            }
                                         }
-                                    }
+                                    )
                                 }
                             }
                         }
@@ -517,65 +617,106 @@ fun ChatItemRow(
 
 @Composable
 fun CallsHistoryTab(viewModel: BlemixoViewModel) {
+    val callLogs by viewModel.callLogs.collectAsState()
     val chats by viewModel.chats.collectAsState()
 
-    if (chats.isEmpty()) {
+    if (callLogs.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("No calls records", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f))
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    Icons.Default.PhoneCallback,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f),
+                    modifier = Modifier.size(56.dp)
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text("No call records found", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f))
+            }
         }
         return
     }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        items(chats) { chat ->
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                modifier = Modifier.fillMaxWidth()
+    Column(modifier = Modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.End
+        ) {
+            TextButton(
+                onClick = { viewModel.clearCallLogs() },
+                modifier = Modifier.testTag("clear_calls_button")
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                Icon(Icons.Default.DeleteSweep, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Clear History", fontSize = 12.sp)
+            }
+        }
+
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(callLogs) { log ->
+                val formatter = remember { SimpleDateFormat("MMM dd, h:mm a", Locale.getDefault()) }
+                val timeString = formatter.format(Date(log.timestamp))
+
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(chat.contactName.firstOrNull()?.toString() ?: "U", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(chat.contactName, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    Icons.Default.ArrowOutward,
-                                    contentDescription = "Outgoing",
-                                    tint = StatusSuccess,
-                                    modifier = Modifier.size(12.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Yesterday, 8:45 PM", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(log.contactName.firstOrNull()?.toString() ?: "U", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(log.contactName, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = if (log.isMissed) Icons.Default.CallMissed 
+                                                      else if (log.isOutgoing) Icons.Default.CallMade 
+                                                      else Icons.Default.CallReceived,
+                                        contentDescription = null,
+                                        tint = if (log.isMissed) MaterialTheme.colorScheme.error 
+                                               else StatusSuccess,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = if (log.durationSeconds > 0) "$timeString (${log.durationSeconds}s)" else "$timeString (Missed)",
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                    )
+                                }
                             }
                         }
-                    }
 
-                    Row {
-                        IconButton(onClick = { viewModel.startVoiceCall(chat) }) {
-                            Icon(Icons.Default.Call, contentDescription = "Voice Call", tint = MaterialTheme.colorScheme.primary)
-                        }
-                        IconButton(onClick = { viewModel.startVideoCall(chat) }) {
-                            Icon(Icons.Default.Videocam, contentDescription = "Video Call", tint = MaterialTheme.colorScheme.primary)
+                        val correspondingChat = chats.find { it.contactName == log.contactName }
+                        if (correspondingChat != null) {
+                            Row {
+                                IconButton(onClick = { viewModel.startVoiceCall(correspondingChat) }) {
+                                    Icon(Icons.Default.Call, contentDescription = "Voice Call", tint = MaterialTheme.colorScheme.primary)
+                                }
+                                IconButton(onClick = { viewModel.startVideoCall(correspondingChat) }) {
+                                    Icon(Icons.Default.Videocam, contentDescription = "Video Call", tint = MaterialTheme.colorScheme.primary)
+                                }
+                            }
                         }
                     }
                 }

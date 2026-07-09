@@ -86,6 +86,38 @@ class BlemixoViewModel(application: Application) : AndroidViewModel(application)
     private val _activeVideoCallChat = MutableStateFlow<ChatEntity?>(null)
     val activeVideoCallChat: StateFlow<ChatEntity?> = _activeVideoCallChat.asStateFlow()
 
+    private val _callLogs = MutableStateFlow<List<CallLog>>(
+        listOf(
+            CallLog(
+                contactName = "Elena Rostova",
+                isVideo = false,
+                isOutgoing = true,
+                timestamp = System.currentTimeMillis() - 86400000,
+                durationSeconds = 145,
+                isMissed = false
+            ),
+            CallLog(
+                contactName = "Marcus Thorne",
+                isVideo = true,
+                isOutgoing = false,
+                timestamp = System.currentTimeMillis() - 172800000,
+                durationSeconds = 342,
+                isMissed = false
+            ),
+            CallLog(
+                contactName = "Sarah Jenkins",
+                isVideo = false,
+                isOutgoing = false,
+                timestamp = System.currentTimeMillis() - 259200000,
+                durationSeconds = 0,
+                isMissed = true
+            )
+        )
+    )
+    val callLogs: StateFlow<List<CallLog>> = _callLogs.asStateFlow()
+
+    private var callStartTime: Long = 0
+
     // Notification banner state
     private val _notification = MutableStateFlow<String?>(null)
     val notification: StateFlow<String?> = _notification.asStateFlow()
@@ -316,22 +348,82 @@ class BlemixoViewModel(application: Application) : AndroidViewModel(application)
     // Call Actions
     fun startVoiceCall(chat: ChatEntity) {
         _activeCallChat.value = chat
+        callStartTime = System.currentTimeMillis()
         navigateTo("call")
     }
 
     fun endVoiceCall() {
+        val chat = _activeCallChat.value
+        if (chat != null) {
+            val duration = if (callStartTime > 0) ((System.currentTimeMillis() - callStartTime) / 1000).toInt() else 15
+            addCallLog(chat.contactName, isVideo = false, isOutgoing = true, durationSeconds = duration, isMissed = false)
+        }
         _activeCallChat.value = null
         navigateTo("chat")
     }
 
     fun startVideoCall(chat: ChatEntity) {
         _activeVideoCallChat.value = chat
+        callStartTime = System.currentTimeMillis()
         navigateTo("videocall")
     }
 
     fun endVideoCall() {
+        val chat = _activeVideoCallChat.value
+        if (chat != null) {
+            val duration = if (callStartTime > 0) ((System.currentTimeMillis() - callStartTime) / 1000).toInt() else 12
+            addCallLog(chat.contactName, isVideo = true, isOutgoing = true, durationSeconds = duration, isMissed = false)
+        }
         _activeVideoCallChat.value = null
         navigateTo("chat")
+    }
+
+    fun addCallLog(contactName: String, isVideo: Boolean, isOutgoing: Boolean, durationSeconds: Int, isMissed: Boolean) {
+        val newLog = CallLog(
+            contactName = contactName,
+            isVideo = isVideo,
+            isOutgoing = isOutgoing,
+            timestamp = System.currentTimeMillis(),
+            durationSeconds = durationSeconds,
+            isMissed = isMissed
+        )
+        _callLogs.value = listOf(newLog) + _callLogs.value
+    }
+
+    fun clearCallLogs() {
+        _callLogs.value = emptyList()
+        showNotification("Call history cleared")
+    }
+
+    fun createNewChat(contactName: String, contactPhone: String) {
+        viewModelScope.launch {
+            // Find unique avatar index based on existing chats to keep it colorful
+            val randomAvatarIndex = (1..4).random()
+            val newChat = ChatEntity(
+                id = (System.currentTimeMillis() % 100000).toInt(), // simple unique id
+                contactName = contactName,
+                contactPhone = contactPhone,
+                avatarResName = "avatar_$randomAvatarIndex",
+                isPinned = false,
+                onlineStatus = "Online",
+                lastMessage = "Started a new secure Blemixo chat with $contactName",
+                lastMessageTime = System.currentTimeMillis()
+            )
+            val id = repository.insertChat(newChat)
+            
+            // Add a friendly welcoming message
+            val welcomeMessage = MessageEntity(
+                chatId = id,
+                text = "Hello! Started a new secure Blemixo chat with $contactName.",
+                isOutgoing = false,
+                timestamp = System.currentTimeMillis()
+            )
+            repository.insertMessage(welcomeMessage)
+            
+            // Switch view
+            openChat(id)
+            showNotification("Secure chat with $contactName created!")
+        }
     }
 
     // Theme control
@@ -356,3 +448,13 @@ class BlemixoViewModel(application: Application) : AndroidViewModel(application)
         _notification.value = null
     }
 }
+
+data class CallLog(
+    val id: String = java.util.UUID.randomUUID().toString(),
+    val contactName: String,
+    val isVideo: Boolean,
+    val isOutgoing: Boolean,
+    val timestamp: Long,
+    val durationSeconds: Int,
+    val isMissed: Boolean = false
+)
